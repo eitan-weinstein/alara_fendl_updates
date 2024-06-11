@@ -67,7 +67,10 @@ def gendf_pkza_extract(gendf_path, M=None):
     print(f"First line of GENDF file: {first_line}")
     Z, element, A = first_line.split('-')[:3]
     A = A.split(' ')[0]
-    M = M or '0'
+    if 'm' in A:
+        m_index = A.find('m')
+        A = A[:m_index]
+    M = str(M) or '0'
     pKZA = int(Z + A + M)
     print(f"Extracted pKZA: {pKZA}")
     return pKZA
