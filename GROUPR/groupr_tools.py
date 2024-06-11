@@ -6,14 +6,31 @@ import contextlib
 import subprocess
 import pandas as pd
 
+# List of elements in the Periodic Table
+elements = [
+    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+    'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
+    'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
+    'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
+    'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
+    'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
+    'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
+    'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
+    'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
+    'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
+    'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'
+]
+
 # Define a function to download the .tendl file given specific user inputs to for element and mass number
 def tendl_download(element, A, filetype, save_path = None):
     # Ensure that A is properly formatted
-    if type(A) is not str:
-        A = str(A)
-    if len(A) < 3:
-        zero_repeater = 3 - len(A)
-        A = '0' * zero_repeater + A
+    A = str(A)
+    if 'm' in A:
+        m_index = A.find('m')
+        A = A[:m_index].zfill(3) + 'm'
+    else:
+        A = A.zfill(3)
 
     # Define general URL format for files in the TENDL database
     tendl_gen_url = 'https://tendl.web.psi.ch/tendl_2017/neutron_file/'
@@ -131,7 +148,8 @@ def groupr_input(matb, MTs, element, A, mt_table):
     card2 = [matb, ign, igg, iwt, lord, ntemp, nsigz, iprint]
 
     # Set Card 3
-    title = f'"GROUPR Processing for {element}{A}"'
+    Z = str(elements.index(element) + 1).zfill(2)
+    title = f'"{Z}-{element}-{A} for TENDL 2017"'
     card3 = [title]
 
     # Set Card 4
@@ -177,8 +195,12 @@ def groupr_input(matb, MTs, element, A, mt_table):
 # Define a function to execute NJOY bash script
 def run_njoy(endf_path, pendf_path, card_deck, element, A):
     # Read the template file
-    with open('run_njoy_template.sh', 'r') as f:
-        script_content = f.read()
+    try:
+        with open('run_njoy_template.sh', 'r') as f:
+            script_content = f.read()
+    except:
+        with open('./GROUPR/run_njoy_template.sh', 'r') as f:
+            script_content = f.read()
 
     # Replace placeholders with actual file paths
     script_content = script_content.replace('<ENDF_PATH>', endf_path)
@@ -203,4 +225,6 @@ def run_njoy(endf_path, pendf_path, card_deck, element, A):
         title_index = output.stdout.find(title)
         print(output.stdout[:title_index + len(title)])
 
-        subprocess.run(['cp', 'tape31', f'tendl_2017_{element}{A}.gendf'])
+        gendf_path = f'tendl_2017_{element}{A}.gendf'
+        subprocess.run(['cp', 'tape31', gendf_path])
+        return gendf_path
